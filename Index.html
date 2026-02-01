@@ -1,0 +1,289 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Compass, 
+  BookOpen, 
+  ChevronRight, 
+  MessageSquare, 
+  Heart, 
+  Share2, 
+  Save, 
+  Volume2, 
+  Languages, 
+  Info,
+  ArrowLeft,
+  Loader2,
+  Moon,
+  Sun,
+  MapPin,
+  Sparkles,
+  Copy,
+  Check
+} from 'lucide-react';
+
+const apiKey = ""; // API Key otomatis ditangani oleh environment
+
+const WugumaAI = () => {
+  // --- State Management ---
+  const [activePage, setActivePage] = useState('home');
+  const [formData, setFormData] = useState({
+    theme: 'Tuntunan Hidup',
+    situation: '',
+    verse: '',
+    language: 'Indonesia',
+    style: 'mendalam'
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [devotion, setDevotion] = useState(null);
+  const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  // --- Quick Prompt Suggestions (Updated with Psalm 119 Moni) ---
+  const suggestions = [
+    { label: "Amakane (Salam)", text: "Saya ingin memulai hari dengan rasa syukur dan kasih persaudaraan seperti pesan Paulus." },
+    { label: "Henda Dode (Firman)", text: "Agati, Di duame, henda dode sizu dia dega-o. Saya ingin merenungkan betapa manisnya firman Tuhan bagi hidup saya hari ini." },
+    { label: "Mego Enoa (Hikmat)", text: "Aga dode dotapa andi-go mego enoama tuia dega-o. Berikan saya hikmat Tuhan untuk melangkah hari ini." },
+    { label: "Kekuatan Iman", text: "Saya merasa lemah dan butuh kekuatan untuk berdiri teguh dalam iman (saita pigi tawama)." },
+    { label: "Maranata!", text: "Saya rindu akan kedatangan Tuhan dan ingin hidup berjaga-jaga hari ini." }
+  ];
+
+  // --- API Logic ---
+  const generateDevotion = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    // REFERENSI TEKS ALKITAB MONI (1 Korintus 16 & Mazmur 119:97-104)
+    const bibleReferenceMoni = `
+      REFERENSI UTAMA 1 (1 Korintus 16 Moni):
+      13 Biga dega-ge igi nggede ki endainu-o, ta saita ewagama tuame. Igiti Zesusi unuama mego hainggua aundo-go saita pigi tawama tuame. Hoa menggama-ge di dia degega nagama data, igiti na di diama tuame. Saita budima tuame. 14 Igiti ko dua, ka dua ondoma di dia-go, mene nggane diama tuame.
+      22 Hoa Sonowi Zesusi Keritus sizu ki dia menendo-go, ui bigapa endaia dode Aiga Sonowi-ge hingginu. Maranata!
+
+      REFERENSI UTAMA 2 (Mazmur 119:97-104 Moni):
+      AIGA SONOWI-GE, DI DUAME, HENDA DODE SIZU DIA DEGA-O
+      97 Agati, Di duame, henda dode/ sizu dia dega-o. Tibaguma-ge nggoepa Aga dode digi/ hainggi hainggi dia dega-o.
+      98 Agati, Di duame, henda dode digi/ zambi to ta a mego nggaga tuia di-o. A ne mbode mene-go/ mego sao dia degega-o. Aga dode dotapa andi-go/ mego enoama tuia dega-o.
+      99 A zagi endaia mene bedege/ wea nagama tuia degega-o. Andi Aga dode hainggi hainggi diama togapa/ A-go zagima tuia dega-o.
+      100 Etaga mene-go mego enoa dogoma-ea/ ui mego-go miapa naga-o. Aga dode zutiama togapa/ andi mego enoa dega-go zaepa naga-o.
+      101 Aga dode zuginda-o, ta/ biga dua ondoma di ki dia dega-o.
+      102 Zagi enda nindia Me-ge de-o. Agati, Di duame henda dode/ andi hawitau-o.
+      103 Dimboga buga soa-go/ miapa-ge di-o. Agati, Di duame, henda dode soa-go/ zaepa-ge di-o.
+      104 Agati, Di duame, henda dode-ge/ mego enoa enda nindia di-o. Di dogo-go biga dua ondoma/ nggae diama tuia dega-o.
+    `;
+
+    const systemPrompt = `
+      Anda adalah AI WUGUMA, pakar teologi Kristen dan penerjemah Bahasa Moni (Papua).
+      Tugas: Memberikan renungan Alkitab mendalam menggunakan teks asli Moni sebagai dasar utama.
+
+      Gunakan kosakata otentik dari referensi:
+      - Sizu (Kasih/Cinta/Suka)
+      - Henda Dode (Firman/Hukum)
+      - Mego Enoa (Hikmat/Pengertian)
+      - Pigi Tawama (Berdiri teguh/Kuat)
+      - Hoa Sonowi (Tuhan)
+
+      ${bibleReferenceMoni}
+
+      Jika bahasa yang dipilih adalah 'Moni (Papua)', buatlah renungan dalam Bahasa Moni yang indah sesuai pola Mazmur 119 dan 1 Korintus 16 tersebut.
+
+      STRUKTUR OUTPUT (JSON):
+      {
+        "judul": "Format: [Judul Moni] - [Judul Indo]",
+        "ayatUtama": "Referensi & Isi Ayat Moni",
+        "isiRenungan": "Renungan mendalam sesuai bahasa terpilih",
+        "isiRenunganIndo": "Terjemahan ke Indonesia (jika input Moni)",
+        "wugumaMoment": {
+          "pesanTuhan": "Pesan singkat",
+          "arahLangkah": "Aplikasi",
+          "sikapHati": "Transformasi"
+        },
+        "doa": "Doa penutup",
+        "ayatPegangan": "Ayat kunci"
+      }
+    `;
+
+    const userQuery = `Buatkan renungan Alkitab tentang: ${formData.situation}. Gunakan diksi dari Mazmur 119:97-104 dan 1 Korintus 16 Moni.`;
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: userQuery }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          generationConfig: { responseMimeType: "application/json", temperature: 0.7 }
+        })
+      });
+
+      if (!response.ok) throw new Error('API Error');
+      const data = await response.json();
+      setDevotion(JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text));
+      setActivePage('output');
+    } catch (err) {
+      setError("Gagal memproses hikmat. Silakan coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const Header = () => (
+    <nav className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+      <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActivePage('home')}>
+        <div className="bg-[#4A5D4E] p-2 rounded-lg">
+          <Compass className="text-white w-5 h-5" />
+        </div>
+        <span className="font-bold text-xl tracking-tight text-[#4A5D4E]">WUGUMA AI</span>
+      </div>
+      <button onClick={() => setActivePage('generator')} className="bg-[#4A5D4E] text-white px-5 py-2 rounded-full text-sm font-semibold hover:scale-105 transition-all shadow-sm">
+        Mulai Teduh
+      </button>
+    </nav>
+  );
+
+  const HomePage = () => (
+    <div className="animate-in fade-in duration-1000">
+      <section className="px-6 py-20 text-center max-w-4xl mx-auto">
+        <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-[#4A5D4E]/10 text-[#4A5D4E] text-[10px] font-bold tracking-[0.2em] uppercase">
+          Aiga Sonowi-ge, Di Duame
+        </div>
+        <h1 className="text-5xl md:text-7xl font-serif text-[#3E362E] mb-6 leading-tight">
+          Henda Dode <span className="text-[#4A5D4E] italic">Sizu</span>
+        </h1>
+        <p className="text-lg text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
+          "Agati, Di duame, henda dode sizu dia dega-o." Menemukan keindahan Firman Tuhan melalui hikmat Alkitab Bahasa Moni.
+        </p>
+        <button onClick={() => setActivePage('generator')} className="bg-[#4A5D4E] text-white px-10 py-5 rounded-2xl text-lg font-bold shadow-xl hover:-translate-y-1 transition-all">Dapatkan Renungan</button>
+      </section>
+    </div>
+  );
+
+  const GeneratorPage = () => (
+    <div className="max-w-2xl mx-auto px-6 py-12 animate-in slide-in-from-bottom duration-500">
+      <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-gray-50">
+        <h2 className="text-3xl font-serif text-[#3E362E] mb-2">Amakane</h2>
+        <p className="text-gray-500 mb-10">Pilihlah bahasa dan dengarkan suara Henda Dode (Firman).</p>
+
+        <div className="space-y-8">
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Bahasa Renungan</label>
+            <div className="grid grid-cols-2 gap-4">
+              <button onClick={() => setFormData({...formData, language: 'Indonesia'})} className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${formData.language === 'Indonesia' ? 'border-[#4A5D4E] bg-[#4A5D4E]/5 text-[#4A5D4E]' : 'border-gray-100 text-gray-400 hover:border-gray-200'}`}>
+                <Languages size={24} />
+                <span className="font-bold text-sm">Indonesia</span>
+              </button>
+              <button onClick={() => setFormData({...formData, language: 'Moni (Papua)'})} className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${formData.language === 'Moni (Papua)' ? 'border-[#4A5D4E] bg-[#4A5D4E]/5 text-[#4A5D4E]' : 'border-gray-100 text-gray-400 hover:border-gray-200'}`}>
+                <MapPin size={24} />
+                <span className="font-bold text-sm">Bahasa Moni</span>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-3">Pilih Topik Hikmat</label>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {suggestions.map((sug, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setFormData({...formData, situation: sug.text})}
+                  className="text-[10px] font-bold py-2 px-4 rounded-full border border-gray-100 bg-gray-50 text-gray-500 hover:bg-[#4A5D4E] hover:text-white transition-all shadow-sm"
+                >
+                  {sug.label}
+                </button>
+              ))}
+            </div>
+            <textarea 
+              className="w-full p-6 bg-gray-50 border-none rounded-[1.5rem] focus:ring-2 focus:ring-[#4A5D4E] outline-none min-h-[160px] text-gray-700 text-lg"
+              placeholder="Ceritakan kerinduanmu..."
+              value={formData.situation}
+              onChange={(e) => setFormData({...formData, situation: e.target.value})}
+            ></textarea>
+          </div>
+
+          <button onClick={generateDevotion} disabled={isLoading || !formData.situation} className="w-full bg-[#4A5D4E] text-white py-5 rounded-2xl font-bold text-xl shadow-xl hover:bg-[#3d4d41] transition-all">
+            {isLoading ? <><Loader2 className="animate-spin" /> Mencari Hikmat...</> : "Buka Pintu Firman"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const OutputPage = () => {
+    const isMoni = formData.language === 'Moni (Papua)';
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-12 animate-in fade-in duration-1000">
+        <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-[#F3F4F6]">
+          <div className="bg-[#4A5D4E] p-12 text-center text-white">
+            <h2 className="text-3xl md:text-5xl font-serif mb-6 leading-tight">{devotion?.judul}</h2>
+            <div className="flex flex-col items-center gap-3 bg-black/20 py-4 px-6 rounded-2xl inline-flex mx-auto backdrop-blur-sm">
+               <span className="text-white font-bold text-sm md:text-base">{devotion?.ayatUtama}</span>
+               <button onClick={() => copyToClipboard(devotion?.ayatUtama)} className="text-[10px] uppercase font-bold text-white/70">
+                 {copied ? 'Tersalin' : 'Salin Ayat'}
+               </button>
+            </div>
+          </div>
+          <div className="p-8 md:p-16 space-y-12">
+            <article className="prose prose-stone prose-xl max-w-none text-gray-700 leading-[2.1] whitespace-pre-wrap font-serif">
+                {devotion?.isiRenungan}
+            </article>
+            {isMoni && (
+              <div className="mt-12 p-8 bg-[#FDFCF8] border-l-8 border-[#4A5D4E] rounded-r-3xl text-gray-600 shadow-inner">
+                <h4 className="text-[10px] font-bold text-[#4A5D4E] mb-4 uppercase tracking-[0.3em]">Terjemahan Indonesia</h4>
+                <div className="text-base whitespace-pre-wrap">{devotion?.isiRenunganIndo}</div>
+              </div>
+            )}
+            <div className="grid md:grid-cols-3 gap-6 pt-6">
+                {[
+                  { label: "Pesan Tuhan", text: devotion?.wugumaMoment.pesanTuhan, icon: <Heart size={16}/> },
+                  { label: "Arah Langkah", text: devotion?.wugumaMoment.arahLangkah, icon: <Compass size={16}/> },
+                  { label: "Sikap Hati", text: devotion?.wugumaMoment.sikapHati, icon: <Sparkles size={16}/> }
+                ].map((box, i) => (
+                  <div key={i} className="bg-gray-50 border border-gray-100 p-8 rounded-[2.5rem] flex flex-col items-center text-center">
+                    <div className="text-[#4A5D4E] mb-3">{box.icon}</div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">{box.label}</span>
+                    <p className="text-gray-700 font-medium text-sm leading-relaxed">{box.text}</p>
+                  </div>
+                ))}
+            </div>
+            <section className="text-center py-12 bg-[#4A5D4E]/5 rounded-[3rem] px-8 border border-[#4A5D4E]/10">
+               <p className="text-2xl font-serif text-[#3E362E] italic mb-10">"{devotion?.doa}"</p>
+               <p className="text-xl font-bold text-[#4A5D4E]">"{devotion?.ayatPegangan}"</p>
+            </section>
+            <div className="flex justify-center">
+              <button onClick={() => setActivePage('generator')} className="border-2 border-gray-200 px-10 py-4 rounded-2xl hover:bg-gray-50 transition-all font-bold text-gray-500">Mulai Baru</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen font-sans bg-[#FDFCF8] text-[#3E362E]">
+      <Header />
+      <main>
+        {activePage === 'home' && <HomePage />}
+        {activePage === 'generator' && <GeneratorPage />}
+        {activePage === 'output' && <OutputPage />}
+      </main>
+      {isLoading && (
+        <div className="fixed inset-0 bg-white/95 backdrop-blur-md z-[100] flex flex-col items-center justify-center text-center p-6">
+          <Loader2 className="w-12 h-12 text-[#4A5D4E] animate-spin mb-4" />
+          <h2 className="text-2xl font-serif text-[#3E362E] mb-2">Amakane...</h2>
+          <p className="text-[#4A5D4E] font-bold text-xs uppercase tracking-widest animate-pulse">Memproses Henda Dode</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default WugumaAI;
+
